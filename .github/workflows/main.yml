@@ -1,0 +1,54 @@
+name: Build private single-file release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "build_fnaf_world_single.py"
+      - ".github/workflows/build-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out build repository
+        uses: actions/checkout@v4
+
+      - name: Check out upstream game port
+        uses: actions/checkout@v4
+        with:
+          repository: web-ports/fnaf-world-refreshed
+          path: upstream
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install image converter
+        run: python -m pip install --upgrade Pillow
+
+      - name: Build the one-file HTML
+        run: python build_fnaf_world_single.py --repo upstream --output FNAF-World-Refreshed-Single.html
+
+      - name: Publish private GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest FNaF World Refreshed single-file build
+          target_commitish: main
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            Automatically built from web-ports/fnaf-world-refreshed.
+
+            This release belongs to a private repository. The HTML contains the Clickteam runtime and game resources in one file.
+          files: FNAF-World-Refreshed-Single.html
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
